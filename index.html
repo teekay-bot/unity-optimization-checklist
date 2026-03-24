@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unity 6.3 LTS URP — New Project Optimization Checklist</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f14;
+    --surface: #151920;
+    --surface2: #1c2029;
+    --surface3: #232830;
+    --border: #2a3040;
+    --border-light: #3a4560;
+    --text: #e2e8f0;
+    --text-muted: #8892a4;
+    --text-dim: #5a6478;
+    --accent: #4ade80;
+    --accent-dim: #22c55e;
+    --accent-glow: rgba(74, 222, 128, 0.15);
+    --warn: #fbbf24;
+    --warn-bg: rgba(251, 191, 36, 0.08);
+    --warn-border: rgba(251, 191, 36, 0.25);
+    --danger: #f87171;
+    --danger-bg: rgba(248, 113, 113, 0.08);
+    --danger-border: rgba(248, 113, 113, 0.25);
+    --info: #60a5fa;
+    --info-bg: rgba(96, 165, 250, 0.08);
+    --info-border: rgba(96, 165, 250, 0.25);
+    --purple: #a78bfa;
+    --font: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── SIDEBAR NAV ── */
+  .page-layout {
+    display: flex;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .sidebar {
+    position: sticky;
+    top: 52px;
+    align-self: flex-start;
+    width: 220px;
+    min-width: 220px;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    padding: 20px 0;
+    margin-right: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .sidebar::-webkit-scrollbar { width: 3px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .sidebar-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 0 12px 8px;
+  }
+  .sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    border-radius: 7px;
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+    margin: 1px 0;
+  }
+  .sidebar a:hover {
+    background: var(--surface);
+    color: var(--text);
+  }
+  .sidebar a.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .sidebar a .nav-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-dim);
+    min-width: 18px;
+  }
+  .sidebar a.active .nav-num { color: var(--accent); }
+  .main-content {
+    flex: 1;
+    min-width: 0;
+    max-width: 960px;
+  }
+  .nav-toggle {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 300;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(74,222,128,0.3);
+    transition: transform 0.2s;
+  }
+  .nav-toggle:hover { transform: scale(1.1); }
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 149;
+  }
+  .sidebar-overlay.open { display: block; }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 80px 40px 60px;
+    text-align: center;
+    background: linear-gradient(180deg, #111620 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -100px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(74,222,128,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-glow);
+    border: 1px solid rgba(74,222,128,0.2);
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p {
+    font-size: 17px;
+    color: var(--text-muted);
+    max-width: 560px;
+    margin: 0 auto 28px;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .hero-meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar-container {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(12,15,20,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 40px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .progress-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .progress-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    min-width: 80px;
+    text-align: right;
+  }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    margin: 48px 0;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-num {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-glow);
+    border: 1px solid rgba(74,222,128,0.2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    line-height: 1;
+  }
+  .section-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .section-desc {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 20px;
+    padding-left: 2px;
+  }
+
+  /* ── SUBSECTION ── */
+  .subsection {
+    margin: 24px 0 16px;
+  }
+  .subsection h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .subsection h3::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 16px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* ── CHECKLIST ITEMS ── */
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    transition: background 0.15s;
+    cursor: pointer;
+    user-select: none;
+  }
+  .check-item:hover { background: var(--surface); }
+  .check-item.checked { opacity: 0.5; }
+  .check-item.checked .check-label { text-decoration: line-through; }
+
+  .check-box {
+    width: 20px; height: 20px;
+    min-width: 20px;
+    border: 2px solid var(--border-light);
+    border-radius: 5px;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 12px;
+    color: transparent;
+  }
+  .check-item.checked .check-box {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+  }
+
+  .check-content { flex: 1; }
+  .check-label {
+    font-size: 14px;
+    font-weight: 500;
+    transition: opacity 0.2s;
+  }
+  .check-label strong { color: var(--accent); font-weight: 700; }
+  .check-label .val {
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .check-sub {
+    font-size: 12.5px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* sub-check (indented) */
+  .sub-check { padding-left: 32px; }
+  .sub-check .check-box {
+    width: 16px; height: 16px; min-width: 16px;
+    border-radius: 4px;
+    margin-top: 3px;
+  }
+  .sub-check .check-label { font-size: 13px; }
+
+  /* ── CALLOUT BOXES ── */
+  .callout {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    margin: 12px 0;
+    font-size: 13px;
+    line-height: 1.6;
+    border: 1px solid;
+  }
+  .callout-icon {
+    font-size: 16px;
+    min-width: 20px;
+    text-align: center;
+    margin-top: 1px;
+  }
+  .callout.tip {
+    background: var(--info-bg);
+    border-color: var(--info-border);
+    color: #93bbfc;
+  }
+  .callout.warn {
+    background: var(--warn-bg);
+    border-color: var(--warn-border);
+    color: #f5d98a;
+  }
+  .callout.danger {
+    background: var(--danger-bg);
+    border-color: var(--danger-border);
+    color: #fca5a5;
+  }
+  .callout strong { color: inherit; }
+  .callout code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* ── TABLES ── */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 16px 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    background: var(--surface2);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    padding: 10px 14px;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.015); }
+  td:first-child {
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  td code {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    background: rgba(74,222,128,0.08);
+    color: var(--accent);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* ── BATCHING DIAGRAM ── */
+  .batching-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin: 20px 0;
+  }
+  .batching-diagram h4 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    text-align: center;
+    color: var(--text);
+  }
+  .bd-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0;
+    font-size: 13px;
+  }
+  .bd-label {
+    min-width: 150px;
+    font-weight: 600;
+    text-align: right;
+    font-size: 12px;
+  }
+  .bd-arrow { color: var(--text-dim); font-family: var(--mono); }
+  .bd-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+  .bd-tag.compat { background: rgba(74,222,128,0.12); color: var(--accent); border: 1px solid rgba(74,222,128,0.25); }
+  .bd-tag.incompat { background: rgba(248,113,113,0.12); color: var(--danger); border: 1px solid rgba(248,113,113,0.25); }
+  .bd-tag.conditional { background: rgba(251,191,36,0.12); color: var(--warn); border: 1px solid rgba(251,191,36,0.25); }
+
+  /* ── OPTIMIZATION LOOP ── */
+  .loop-flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin: 20px 0;
+  }
+  .loop-step {
+    padding: 8px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .loop-step.active {
+    background: var(--accent-glow);
+    border-color: rgba(74,222,128,0.3);
+    color: var(--accent);
+  }
+  .loop-arrow {
+    color: var(--text-dim);
+    font-size: 18px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 48px 24px;
+    border-top: 1px solid var(--border);
+    margin-top: 60px;
+  }
+  footer p {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .reset-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .reset-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 960px) {
+    .page-layout { display: block; }
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 200;
+      width: 240px;
+      min-width: 240px;
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      padding-top: 20px;
+      max-height: 100vh;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-overlay.open { display: block; }
+    .nav-toggle { display: flex; align-items: center; justify-content: center; }
+    .main-content { max-width: 100%; padding: 0 12px; }
+    .hero { padding: 48px 20px 36px; }
+    .progress-bar-container { padding: 10px 16px; }
+    .section-header h2 { font-size: 18px; }
+    .bd-row { flex-wrap: wrap; }
+    .bd-label { min-width: auto; text-align: left; }
+  }
+
+  @media print {
+    .progress-bar-container, .sidebar, .nav-toggle, .sidebar-overlay { display: none !important; }
+    .page-layout { display: block; }
+    .hero { padding: 24px; break-after: avoid; }
+    body { background: #fff; color: #111; }
+    .section { break-inside: avoid; }
+    .callout { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════ HERO ════ -->
+<div class="hero">
+  <div class="hero-badge">Reusable Template</div>
+  <h1>Unity 6 <span>URP</span><br>Optimization Checklist</h1>
+  <p>Step-by-step configuration for Project Settings, URP Assets, and build optimization — verified for correctness with conflict warnings.</p>
+  <div class="hero-meta">
+    <span>⬡ Unity 6.3 LTS</span>
+    <span>◈ PC + Mobile</span>
+    <span>⟐ URP Pipeline</span>
+    <span>↻ v2.0 — Mar 2026</span>
+  </div>
+</div>
+
+<!-- ════ PROGRESS ════ -->
+<div class="progress-bar-container">
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-label" id="progressLabel">0 / 0</div>
+  <button class="reset-btn" onclick="resetAll()">↻ Reset</button>
+</div>
+
+<div class="page-layout">
+
+<!-- ════ SIDEBAR NAV ════ -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-label">Sections</div>
+  <a href="#s1" data-section="s1"><span class="nav-num">01</span> Player Settings</a>
+  <a href="#s2" data-section="s2"><span class="nav-num">02</span> Quality Settings</a>
+  <a href="#s3" data-section="s3"><span class="nav-num">03</span> URP Asset Settings</a>
+  <a href="#s4" data-section="s4"><span class="nav-num">04</span> Graphics & Physics</a>
+  <a href="#s5" data-section="s5"><span class="nav-num">05</span> Asset Optimization</a>
+  <a href="#s6" data-section="s6"><span class="nav-num">06</span> Memory & GC</a>
+  <a href="#s7" data-section="s7"><span class="nav-num">07</span> Pre-Release Build</a>
+  <a href="#s8" data-section="s8"><span class="nav-num">08</span> Profiling & Testing</a>
+  <a href="#s9" data-section="s9"><span class="nav-num">09</span> Optimization Loop</a>
+</nav>
+<button class="nav-toggle" id="navToggle" onclick="toggleSidebar()" aria-label="Toggle navigation">☰</button>
+
+<div class="main-content">
+
+<!-- ════════════════════════════════════════════════════
+     SECTION 1: PLAYER SETTINGS
+     ════════════════════════════════════════════════════ -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <h2>Player Settings</h2>
+  </div>
+  <p class="section-desc">Edit → Project Settings → Player. Configure these immediately after creating a new project.</p>
+
+  <div class="subsection">
+    <h3>Scripting & Compilation</h3>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label"><strong>Scripting Backend</strong> <span class="val">→ IL2CPP</span></div>
+        <div class="check-sub">Player → Other Settings → Configuration → Scripting Backend</div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label"><strong>Managed Stripping Level</strong> <span class="val">→ Medium or High</span></div>
+        <div class="check-sub">Player → Other Settings → Optimization → Managed Stripping Level. High may break reflection — always test.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <h3>Graphics & Rendering</h3>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label"><strong>Auto Graphics API</strong> <span class="val">→ Off</span></div>
+        <div class="check-sub">Player → Other Settings → Rendering → Auto Graphics API. Manually select needed APIs below it.</div>
+      </div>
+    </div>
+    <div class="check-item sub-check" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label">PC: DirectX 12, Vulkan, or Metal (pick what you need)</div>
+      </div>
+    </div>
+    <div class="check-item sub-check" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label">Android: Vulkan + OpenGL ES 3.2 (remove ES 2.0)</div>
+      </div>
+    </div>
+    <div class="check-item sub-check" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label">iOS: Metal only</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <h3>Resolution & Presentation</h3>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label"><strong>VSync</strong> <span class="val">→ Disabled (VSync Count = 0)</span></div>
+        <div class="check-sub">Project Settings → Quality → Rendering → VSync Count → Don't Sync</div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label">Set <code>Application.targetFrameRate</code> in code <span class="val">→ PC: 60+ | Mobile: 30</span></div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label">Mobile: Set orientation (disable auto-rotate if fixed)</div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label">Mobile: Consider resolution scaling / DPI factor for low-end</div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label">Mobile: Disable accelerometer if unused</div>
+        <div class="check-sub">Player → Other Settings → Configuration → Active Input Handling, and disable Accelerometer Frequency.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <h3>Build & Compression</h3>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label"><strong>Compression</strong> <span class="val">→ LZ4HC</span></div>
+        <div class="check-sub">Player → Publishing Settings → Compression Method</div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggle(this)">
+      <div class="check-box">✓</div>
+      <div class="check-content">
+        <div class="check-label">Target Architectures: Only include needed</div>
+      <div class="check-sub">Player → Other Settings → Configuration → Target Architectures (Android) or Architecture (iOS). Exclude x86 on Android.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SECTION 2: QUALITY SETTINGS
+     ════════════════════════════════════════════════════ -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <h2>Quality Settings</h2>
+  </div>
+  <p class="section-desc">Edit → Project Settings → Quality. In URP, most rendering settings moved to the URP Asset (Section 3). Only these remain here.</p>
+
+  <div class="callout warn">
+    <div class="callout-icon">⚠</div>
+    <div><strong>URP moved most quality settings.</strong> Shadow resolution, cascade count, MSAA, pixel light count, and shadow distance are NOT in Project Settings → Quality anymore. They're in the URP Asset Inspector. The table below only lists settings that actually remain in Quality Settings for URP projects.</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Setting</th><th>Where to Find</th><th>PC Low</th><th>PC Med</th><th>PC High</th><th>Mobile Low</th><th>Mobile Med</th><th>Mobile High</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Render Pipeline Asset</td><td><code>Quality → Rendering</code></td><td colspan="3">Assign the URP Asset for each quality level</td><td colspan="3">Assign the URP Asset for each quality level</td></tr>
+        <tr><td>VSync Count</td><td><code>Quality → Rendering</code></td><td>Off</td><td>Off</td><td>Off</td><td>Off</td><td>Off</td><td>Off</td></tr>
+        <tr><td>Anisotropic Textures</td><td><code>Quality → Textures</code></td><td>Disabled</td><td>Per Texture</td><td>Forced On</td><td>Disabled</td><td>Disabled</td><td>Per Texture</td></tr>
+        <tr><td>Global Mipmap Limit</td><td><code>Quality → Textures</code></td><td>Half Res</td><td>Full Res</td><td>Full Res</td><td>Quarter Res</td><td>Half Res</td><td>Full Res</td></tr>
+        <tr><td>RT Reflection Probes</td><td><code>Quality → Rendering</code></td><td>Off</td><td>Off</td><td>On</td><td>Off</td><td>Off</td><td>Off</td></tr>
+        <tr><td>LOD Bias</td><td><code>Quality → Level of Detail</code></td><td>0.7</td><td>1.0</td><td>1.5–2.0</td><td>0.5–0.7</td><td>1.0</td><td>1.0–1.5</td></tr>
+        <tr><td>Maximum LOD Level</td><td><code>Quality → Level of Detail</code></td><td>1 (skip LOD0)</td><td>0</td><td>0</td><td>2 (skip LOD0–1)</td><td>1</td><td>0</td></tr>
+        <tr><td>Skin Weights</td><td><code>Quality → Meshes</code></td><td>2 Bones</td><td>4 Bones</td><td>Unlimited</td><td>1 Bone</td><td>2 Bones</td><td>4 Bones</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Delete unused default quality levels</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Assign correct quality level per platform via Build Profiles</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SECTION 3: URP ASSET SETTINGS
+     ════════════════════════════════════════════════════ -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <h2>URP Asset Settings</h2>
+  </div>
+  <p class="section-desc">Create one URP Asset per quality tier. Assign each to its matching Quality Level.</p>
+
+  <div class="subsection"><h3>PC Tiers</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>URP Setting</th><th>Where to Find</th><th>PC Low</th><th>PC Med</th><th>PC High</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Render Scale</td><td><code>URP Asset → Quality</code></td><td>0.75</td><td>0.9</td><td>1.0</td></tr>
+        <tr><td>MSAA</td><td><code>URP Asset → Quality → Anti-aliasing (MSAA)</code></td><td>Off</td><td>2×</td><td>4×</td></tr>
+        <tr><td>HDR</td><td><code>URP Asset → Quality → HDR</code></td><td>Off</td><td>Off</td><td>On</td></tr>
+        <tr><td>Render Path</td><td><code>Universal Renderer → Rendering → Rendering Path</code></td><td>Forward</td><td>Forward / Forward+</td><td>Forward+ / Deferred</td></tr>
+        <tr><td>Main Light Shadows</td><td><code>URP Asset → Lighting → Main Light → Cast Shadows</code></td><td>Off</td><td>On + Soft (Low)</td><td>On + Soft (High)</td></tr>
+        <tr><td>Shadow Distance</td><td><code>URP Asset → Shadows → Max Distance</code></td><td>20</td><td>40</td><td>80</td></tr>
+        <tr><td>Cascade Count</td><td><code>URP Asset → Shadows → Cascade Count</code></td><td>1</td><td>2</td><td>4</td></tr>
+        <tr><td>Main Shadow Res.</td><td><code>URP Asset → Lighting → Main Light → Shadow Resolution</code></td><td>512</td><td>1024</td><td>2048</td></tr>
+        <tr><td>Additional Lights</td><td><code>URP Asset → Lighting → Additional Lights</code></td><td>Disabled</td><td>Per Vertex, Limit 2</td><td>Per Pixel, Limit 4+</td></tr>
+        <tr><td>Addtl. Light Shadows</td><td><code>URP Asset → Lighting → Additional Lights → Cast Shadows</code></td><td>Off</td><td>Off</td><td>On, Atlas 1024</td></tr>
+        <tr><td>Depth Texture</td><td><code>URP Asset → Rendering → Depth Texture</code></td><td>Off</td><td>Off</td><td>On (if needed)</td></tr>
+        <tr><td>Opaque Texture</td><td><code>URP Asset → Rendering → Opaque Texture</code></td><td>Off</td><td>Off</td><td>On (if needed)</td></tr>
+        <tr><td>Post-Processing</td><td><code>Universal Renderer → Post-processing → Enabled</code></td><td>Off</td><td>On (color/bloom)</td><td>On (full stack)</td></tr>
+        <tr><td>Decals</td><td><code>Universal Renderer → Add Renderer Feature → Decal</code></td><td>Not added</td><td>Not added</td><td>Add if needed</td></tr>
+        <tr><td>LOD Cross Fade</td><td><code>URP Asset → Quality → LOD Cross Fade</code></td><td>Bayer</td><td>Blue Noise</td><td>Off / max detail</td></tr>
+        <tr><td>Upscaling Filter</td><td><code>URP Asset → Quality → Upscaling Filter</code></td><td>Nearest</td><td>Bilinear</td><td>STP / FSR</td></tr>
+        <tr><td>Soft Shadows</td><td><code>URP Asset → Shadows → Soft Shadows</code></td><td>Off</td><td>Low</td><td>High</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-icon">⚠</div>
+    <div><strong>Forward+ overhead:</strong> Forward+ uses a light clustering algorithm that is more expensive than plain Forward when your scene has fewer than ~6 real-time lights. Use Forward+ only when you need many lights; otherwise, plain Forward is cheaper for PC Medium.</div>
+  </div>
+  <div class="callout warn">
+    <div class="callout-icon">⚠</div>
+    <div><strong>Deferred does not support OpenGL ES.</strong> If you select Deferred on a platform using OpenGL ES (many Android devices), Unity silently falls back to Forward. Deferred also requires Shader Model 4.5 minimum. Only use for PC High or confirmed Vulkan/Metal mobile devices.</div>
+  </div>
+
+  <div class="subsection"><h3>Mobile Tiers</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>URP Setting</th><th>Where to Find</th><th>Mobile Low</th><th>Mobile Med</th><th>Mobile High</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Render Scale</td><td><code>URP Asset → Quality</code></td><td>0.5–0.7</td><td>0.8–0.9</td><td>1.0</td></tr>
+        <tr><td>MSAA</td><td><code>URP Asset → Quality → Anti-aliasing (MSAA)</code></td><td>Off</td><td>2×</td><td>4×</td></tr>
+        <tr><td>HDR</td><td><code>URP Asset → Quality → HDR</code></td><td>Off</td><td>Off</td><td>Off</td></tr>
+        <tr><td>Render Path</td><td><code>Universal Renderer → Rendering → Rendering Path</code></td><td>Forward</td><td>Forward</td><td>Forward / Forward+</td></tr>
+        <tr><td>Main Light Shadows</td><td><code>URP Asset → Lighting → Main Light → Cast Shadows</code></td><td>Off</td><td>On (Hard)</td><td>On (Hard/Soft Low)</td></tr>
+        <tr><td>Shadow Distance</td><td><code>URP Asset → Shadows → Max Distance</code></td><td>—</td><td>20</td><td>40</td></tr>
+        <tr><td>Cascade Count</td><td><code>URP Asset → Shadows → Cascade Count</code></td><td>—</td><td>1</td><td>2</td></tr>
+        <tr><td>Main Shadow Res.</td><td><code>URP Asset → Lighting → Main Light → Shadow Resolution</code></td><td>—</td><td>512</td><td>1024</td></tr>
+        <tr><td>Additional Lights</td><td><code>URP Asset → Lighting → Additional Lights</code></td><td>Disabled</td><td>Per Vertex, Limit 1</td><td>Per Pixel, Limit 2</td></tr>
+        <tr><td>Addtl. Light Shadows</td><td><code>URP Asset → Lighting → Additional Lights → Cast Shadows</code></td><td>Off</td><td>Off</td><td>On, Atlas 512</td></tr>
+        <tr><td>Depth Texture</td><td><code>URP Asset → Rendering → Depth Texture</code></td><td>Off</td><td>Off</td><td>On (if needed)</td></tr>
+        <tr><td>Opaque Texture</td><td><code>URP Asset → Rendering → Opaque Texture</code></td><td>Off</td><td>Off</td><td>On (if needed)</td></tr>
+        <tr><td>Post-Processing</td><td><code>Universal Renderer → Post-processing → Enabled</code></td><td>Off</td><td>On (bloom/color)</td><td>On (full)</td></tr>
+        <tr><td>LOD Cross Fade</td><td><code>URP Asset → Quality → LOD Cross Fade</code></td><td>Off</td><td>Bayer</td><td>Blue Noise</td></tr>
+        <tr><td>Upscaling Filter</td><td><code>URP Asset → Quality → Upscaling Filter</code></td><td>Nearest</td><td>Bilinear</td><td>STP / FSR</td></tr>
+        <tr><td>Soft Shadows</td><td><code>URP Asset → Shadows → Soft Shadows</code></td><td>Off</td><td>Off</td><td>Low</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-icon">⚠</div>
+    <div><strong>"Soft Particles" is NOT a URP Asset toggle.</strong> It's a shader keyword (<code>_SOFTPARTICLES_ON</code>) you enable inside particle shaders. It requires the Depth Texture to be on. Don't confuse it with the "Soft Shadows" setting.</div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div><strong>Mobile HDR is Off across all tiers.</strong> HDR on mobile doubles the color buffer bandwidth (from RGBA8 to RGBA16F), which is extremely costly on tile-based GPUs. Only enable if you absolutely need HDR post-processing, and profile carefully.</div>
+  </div>
+
+  <!-- ── BATCHING CONFLICTS ── -->
+  <div class="subsection"><h3>Draw Call Batching — Critical Conflicts</h3></div>
+
+  <div class="callout danger">
+    <div class="callout-icon">🚫</div>
+    <div><strong>SRP Batcher and GPU Instancing are MUTUALLY EXCLUSIVE.</strong><br>
+    The SRP Batcher takes priority. If a GameObject's shader is SRP-Batcher-compatible, GPU Instancing is silently ignored — Unity will not instance it, even if "Enable GPU Instancing" is checked on the material. They cannot work together on the same object.</div>
+  </div>
+  <div class="callout danger">
+    <div class="callout-icon">🚫</div>
+    <div><strong>Dynamic Batching also conflicts with SRP Batcher.</strong><br>
+    In URP, Dynamic Batching only activates for objects that are NOT SRP-Batcher-compatible. Since most URP shaders are SRP-compatible by default, enabling "Dynamic Batching" in the URP Asset usually does nothing visible.</div>
+  </div>
+
+  <div class="batching-diagram">
+    <h4>Batching Priority Order in URP</h4>
+    <div class="bd-row">
+      <span class="bd-label">SRP Batcher</span>
+      <span class="bd-arrow">→</span>
+      <span class="bd-tag compat">✓ DEFAULT for all URP shaders</span>
+      <span class="bd-arrow" style="margin-left: 8px;">|</span>
+      <span style="font-size:12px; color: var(--text-dim); margin-left: 4px;">Highest priority. Reduces render-state changes.</span>
+    </div>
+    <div class="bd-row">
+      <span class="bd-label">Static Batching</span>
+      <span class="bd-arrow">→</span>
+      <span class="bd-tag compat">✓ Works WITH SRP Batcher</span>
+      <span class="bd-arrow" style="margin-left: 8px;">|</span>
+      <span style="font-size:12px; color: var(--text-dim); margin-left: 4px;">Complementary — merges static meshes.</span>
+    </div>
+    <div class="bd-row">
+      <span class="bd-label">GPU Instancing</span>
+      <span class="bd-arrow">→</span>
+      <span class="bd-tag incompat">✗ Blocked by SRP Batcher</span>
+      <span class="bd-arrow" style="margin-left: 8px;">|</span>
+      <span style="font-size:12px; color: var(--text-dim); margin-left: 4px;">Requires breaking SRP compatibility or using <code>DrawMeshInstanced</code>.</span>
+    </div>
+    <div class="bd-row">
+      <span class="bd-label">Dynamic Batching</span>
+      <span class="bd-arrow">→</span>
+      <span class="bd-tag incompat">✗ Blocked by SRP Batcher</span>
+      <span class="bd-arrow" style="margin-left: 8px;">|</span>
+      <span style="font-size:12px; color: var(--text-dim); margin-left: 4px;">Only runs on SRP-incompatible objects (&lt;300 verts).</span>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div><strong>Recommended batching strategy:</strong><br>
+    • Keep <strong>SRP Batcher ON</strong> globally — it's the biggest CPU-side win for most scenes.<br>
+    • Use <strong>Static Batching</strong> for non-moving geometry (works alongside SRP Batcher).<br>
+    • For many <em>identical</em> meshes (grass, foliage, bullets), use <code>Graphics.DrawMeshInstanced</code> or <code>RenderMeshInstanced</code> which bypass the SRP Batcher and send real GPU-instanced draw calls.<br>
+    • Only break SRP compatibility per-material (via <code>MaterialPropertyBlock</code> or shader modification) when you've profiled and confirmed GPU Instancing is faster for that specific case.<br>
+    • <strong>Dynamic Batching</strong> is rarely useful in URP — leave it Off unless you have many tiny SRP-incompatible meshes.</div>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-icon">⚠</div>
+    <div><strong><code>MaterialPropertyBlock</code> breaks SRP Batcher.</strong> Setting per-instance data via <code>Renderer.SetPropertyBlock()</code> makes that renderer SRP-incompatible. If you need per-instance visual variation, prefer creating separate Material instances (SRP Batcher handles many materials with the same shader efficiently) or use GPU Instancing APIs explicitly.</div>
+  </div>
+
+  <div class="subsection"><h3>Corrected Batching Checklist</h3></div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label"><strong>GPU Instancing</strong> <span class="val">→ Per-material checkbox (not a global setting)</span></div>
+      <div class="check-sub">Material Inspector → Enable GPU Instancing. Only works on SRP-incompatible shaders. For mass-instancing, use Graphics.DrawMeshInstanced / RenderMeshInstanced APIs.</div>
+    </div>
+  </div>
+
+  <div class="subsection"><h3>Performance Budgets (Practical Values)</h3></div>
+
+  <div class="callout warn">
+    <div class="callout-icon">⚠</div>
+    <div><strong>Frame budget ≠ 1000÷FPS.</strong> Unity's official mobile optimization guide recommends using only ~65% of the raw frame time to leave thermal headroom. A 30fps target gives 33ms mathematically, but the <em>practical</em> budget is ~22ms. The remaining ~11ms prevents the device from overheating and throttling. PC has active cooling so the full frame time is usable.</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Budget</th><th>PC Low</th><th>PC Med</th><th>PC High</th><th>Mobile Low</th><th>Mobile Med</th><th>Mobile High</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Frame Budget</td>
+          <td>33 ms</td><td>16 ms</td><td>8–11 ms</td>
+          <td><strong>~22 ms</strong></td><td><strong>~11 ms</strong></td><td><strong>~11 ms</strong></td>
+        </tr>
+        <tr>
+          <td>Batches (Draw Calls)</td>
+          <td>&lt;500</td><td>&lt;2,000</td><td>2,000–5,000</td>
+          <td><strong>&lt;200</strong></td><td><strong>200–500</strong></td><td><strong>500–1,000</strong></td>
+        </tr>
+        <tr>
+          <td>SetPass Calls</td>
+          <td>&lt;100</td><td>&lt;200</td><td>&lt;500</td>
+          <td><strong>&lt;50</strong></td><td><strong>&lt;100</strong></td><td><strong>&lt;200</strong></td>
+        </tr>
+        <tr>
+          <td>Triangles / Frame</td>
+          <td>&lt;500K</td><td>500K–2M</td><td>2M+</td>
+          <td><strong>&lt;100K</strong></td><td><strong>100K–500K</strong></td><td><strong>500K–1M</strong></td>
+        </tr>
+        <tr>
+          <td>VRAM / App Memory</td>
+          <td>1–2 GB</td><td>2–4 GB</td><td>4–8 GB</td>
+          <td><strong>300–500 MB</strong></td><td><strong>500 MB–1 GB</strong></td><td><strong>1–1.5 GB</strong></td>
+        </tr>
+        <tr>
+          <td>Texture Memory</td>
+          <td>512 MB–1 GB</td><td>1–2 GB</td><td>2–4 GB</td>
+          <td><strong>100–150 MB</strong></td><td><strong>200–300 MB</strong></td><td><strong>400–512 MB</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout danger">
+    <div class="callout-icon">🚫</div>
+    <div><strong>With SRP Batcher, "Batches" ≠ performance cost.</strong> The SRP Batcher doesn't reduce batch count — it reduces <strong>SetPass calls</strong> (render state changes) by caching material data on the GPU. You can have 500 batches with only 10 SetPass calls and get great performance. <strong>Always check SetPass calls in the Profiler → Rendering module</strong>, not just the Batches number. The Frame Debugger shows exactly where SRP batches break and why.</div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div><strong>Where these numbers come from:</strong><br>
+    • <strong>Frame budget (mobile):</strong> Unity's official blog recommends ~65% of raw frame time to prevent thermal throttling on mobile devices without active cooling.<br>
+    • <strong>Draw calls:</strong> Practical guideline from multiple shipped mobile titles and Unity performance experts: &lt;200 batches for mobile low/mid-spec hardware, &lt;2000 for desktop.<br>
+    • <strong>Triangle counts:</strong> 100K–500K per frame for mid-range mobile (varies heavily with shader complexity and fill rate).<br>
+    • <strong>Memory:</strong> Mobile texture budgets from shipped Unity AR/VR and game projects. Total app memory accounts for textures + meshes + audio + scripts + GC heap. Exceeding OS limits causes silent OOM kills.</div>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-icon">⚠</div>
+    <div><strong>Mobile thermal throttling is real.</strong> Even if your game hits 60fps in the first minute, sustained load causes the SoC to throttle after 3–5 minutes. Always profile in long sessions (10+ minutes) on target hardware. Aim for 30fps on mobile to leave ~35% GPU idle time as thermal headroom.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SECTION 4: GRAPHICS & PHYSICS
+     ════════════════════════════════════════════════════ -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <h2>Graphics & Physics Settings</h2>
+  </div>
+
+  <div class="subsection"><h3>Graphics  (Edit → Project Settings → Graphics)</h3></div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label"><strong>Default Render Pipeline Asset</strong> <span class="val">→ Set to your URP Asset</span></div>
+      <div class="check-sub">Project Settings → Graphics → Scriptable Render Pipeline Settings → Default Render Pipeline</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Enable Built-in Shader Stripping</div>
+      <div class="check-sub">Project Settings → Graphics → Shader Stripping → Lightmap Modes / Fog Modes → Automatic</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Assign different URP Assets per Quality Tier via tier overrides (if needed)</div>
+    </div>
+  </div>
+
+  <div class="subsection"><h3>Physics  (Edit → Project Settings → Physics)</h3></div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label"><strong>Fixed Timestep</strong> <span class="val">→ 0.02 (PC) or 0.03–0.05 (Mobile)</span></div>
+      <div class="check-sub">⚠ NOT in Physics! → Project Settings → Time → Fixed Timestep. Higher value = fewer physics steps = lower CPU cost.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label"><strong>Solver Iterations</strong> <span class="val">→ 6 (PC) / 4 (Mobile)</span></div>
+      <div class="check-sub">Project Settings → Physics → Default Solver Iterations</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Configure Collision Layer Matrix — disable unused layer pairs</div>
+      <div class="check-sub">Project Settings → Physics → Layer Collision Matrix (bottom of panel)</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Prefer primitive colliders over mesh colliders</div>
+    </div>
+  </div>
+
+  <div class="subsection"><h3>Editor  (Edit → Project Settings → Editor)</h3></div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Enable Enter Play Mode Options (skip Domain Reload)</div>
+      <div class="check-sub">Project Settings → Editor → Enter Play Mode Settings → check Enter Play Mode Options. Editor-only — can hide static-field bugs.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SECTION 5: ASSET OPTIMIZATION
+     ════════════════════════════════════════════════════ -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <span class="section-num">05</span>
+    <h2>Asset Optimization</h2>
+  </div>
+  <p class="section-desc">Apply these per-asset rules as you import content throughout development.</p>
+
+  <div class="subsection"><h3>Textures</h3></div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label"><strong>Compression</strong> <span class="val">→ ASTC (modern mobile) / DXT-BC (PC)</span></div>
+      <div class="check-sub">Select texture → Inspector → Platform Override tab → Format. PVRTC only for very old iOS.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Disable Read/Write on textures not modified at runtime</div>
+      <div class="check-sub">Select texture → Inspector → Advanced → Read/Write (uncheck)</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Set Max Size to smallest acceptable resolution per texture</div>
+      <div class="check-sub">Select texture → Inspector → Platform Override tab → Max Size</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Disable Generate Mip Maps on UI / 2D sprites</div>
+      <div class="check-sub">Select texture → Inspector → Advanced → Generate Mip Maps (uncheck)</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Combine UI sprites into Sprite Atlases</div>
+      <div class="check-sub">Create: Assets → Create → 2D → Sprite Atlas. Then drag sprites into the Objects list.</div>
+    </div>
+  </div>
+
+  <div class="subsection"><h3>Meshes & Rendering</h3></div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Use LODGroup on 3D meshes — simpler models at distance</div>
+      <div class="check-sub">Select GameObject → Add Component → LOD Group. Assign LOD meshes to each level.</div>
+    </div>
+  </div>
+  <div class="check-item sub-check" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Disable LOD Crossfade on Mobile Low (use instant switch)</div>
+    </div>
+  </div>
+  <div class="check-item sub-check" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Use Maximum LOD Level in Quality to strip unneeded LODs from build</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Minimize overdraw — avoid full-screen transparent overlays</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Bake Occlusion Culling for scenes with large static geometry</div>
+      <div class="check-sub">Window → Rendering → Occlusion Culling. Mark occluders/occludees as Static, then Bake.</div>
+    </div>
+  </div>
+
+  <div class="subsection"><h3>Lighting</h3></div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Bake static lighting; use Mixed lighting mode</div>
+      <div class="check-sub">Window → Rendering → Lighting → Lightmapping Settings → Generate Lighting. Set lights to Mixed or Baked.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Use Light Probes for dynamic objects</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Keep real-time lights minimal (ideally 1 Main Directional)</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Disable Realtime GI on mobile</div>
+      <div class="check-sub">Window → Rendering → Lighting → Realtime Global Illumination (uncheck)</div>
+    </div>
+  </div>
+
+  <div class="subsection"><h3>Shaders</h3></div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Strip unused shader variants via Built-in Shader Stripping</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">In URP Asset, disable features you don't use (Ambient Occlusion, Decals)</div>
+      <div class="check-sub">URP Asset → Lighting / Rendering sections. Each disabled feature strips its shader variants from the build.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Use ShaderVariantCollection + Strict mode to identify unnecessary variants</div>
+      <div class="check-sub">Project Settings → Graphics → Shader Loading → Log Shader Compilation, plus Assets → Create → Shader → Shader Variant Collection</div>
+    </div>
+  </div>
+
+  <div class="subsection"><h3>Audio & Particles</h3></div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Use compressed audio (MP3/OGG) on mobile; limit Max Real Voices</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Limit particle count/spawn rates; use Billboard shaders</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Disable Soft Particles and Motion Vectors on mobile</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SECTION 6: MEMORY & GC
+     ════════════════════════════════════════════════════ -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <span class="section-num">06</span>
+    <h2>Memory & Garbage Collection</h2>
+  </div>
+
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Avoid per-frame allocations — use object pools, reuse lists/arrays</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Use Addressables to load/unload assets on demand</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Use additive Scene Streaming for large scenes</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Set <code>Application.targetFrameRate</code> to give idle time for GC on mobile</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SECTION 7: PRE-RELEASE BUILD
+     ════════════════════════════════════════════════════ -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <span class="section-num">07</span>
+    <h2>Pre-Release Build Checklist</h2>
+  </div>
+  <p class="section-desc">Run through these before every release build.</p>
+
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Development Build: Off</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Debug logging: Stripped (<code>[Conditional]</code> attribute or <code>#if</code> directives)</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Managed Debug Symbols: Stripped</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Profiler CPU/GPU: Frame times within budget (no large GC spikes)</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Draw Calls + SetPass Calls: Within tier budget (check Profiler → Rendering)</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Memory: Texture and asset memory under budget (no leaks)</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Resolution: Runs at intended resolution on all target devices</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">SRP Batcher: Confirmed Enabled in Frame Debugger</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Depth/Opaque Textures: Off unless actively used by a shader/effect</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Quality Tier: Correct tier active on each device class</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Lightmapping: All static lights baked; real-time light count as planned</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Shaders: No compile errors, no fallback shaders, minimal variant count</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Addressables/IO: Asset loading is async and non-blocking</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Cameras: Only necessary cameras active; UI is batched</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Physics: Timestep and solver iterations match design; stable performance</div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SECTION 8: PROFILING & TESTING
+     ════════════════════════════════════════════════════ -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <span class="section-num">08</span>
+    <h2>Profiling & Device Testing</h2>
+  </div>
+  <p class="section-desc">Profile early, profile often. Always test on real hardware.</p>
+
+  <div class="subsection"><h3>Profiling</h3></div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Use Unity Profiler (CPU, GPU, Memory modules)</div>
+      <div class="check-sub">Window → Analysis → Profiler</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Check main thread vs. workers vs. render thread for CPU bottlenecks</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Use Frame Debugger to inspect SRP batches, SetPass calls, and batch-break reasons</div>
+      <div class="check-sub">Window → Analysis → Frame Debugger. Expand RenderLoopNewBatcher → Draw list to see per-batch info.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Monitor GC pressure (allocations per frame)</div>
+      <div class="check-sub">Profiler → CPU module → Hierarchy view → GC.Alloc column. Target: 0 bytes in gameplay loops.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Check Overdraw for GPU fill-rate bottlenecks</div>
+      <div class="check-sub">Scene View → top-left dropdown → Overdraw. Saturated colors = high overdraw.</div>
+    </div>
+  </div>
+
+  <div class="subsection"><h3>Device Testing</h3></div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Test on actual hardware for each target tier (including lowest-spec device)</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Run long sessions to check for thermal throttling</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Use Development Build + Profiler for on-device profiling</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Test low-memory scenarios for OOM crashes</div></div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content"><div class="check-label">Mobile: Use platform profiling tools (Perfetto, Xcode Instruments)</div></div>
+  </div>
+
+  <div class="subsection"><h3>Editor Validation</h3></div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Test at target resolutions in Game view</div>
+      <div class="check-sub">Game view → Resolution dropdown → Add custom resolutions matching target devices</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Use Frame Debugger to find unbatched objects</div>
+      <div class="check-sub">Window → Analysis → Frame Debugger → look for individual Draw Mesh entries outside SRP Batch groups</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Verify SRP Batcher is active on all expected shaders</div>
+      <div class="check-sub">Select any shader in Project → Inspector shows "SRP Batcher: Compatible/Not compatible"</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SECTION 9: OPTIMIZATION LOOP
+     ════════════════════════════════════════════════════ -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <span class="section-num">09</span>
+    <h2>The Optimization Loop</h2>
+  </div>
+  <p class="section-desc">Follow this cycle throughout development — not just at the end.</p>
+
+  <div class="loop-flow">
+    <div class="loop-step active">Project Setup</div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-step">Baseline Profiling</div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-step">Identify Bottlenecks</div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-step">Adjust Settings</div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-step">Re-Profile</div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-step">Compare</div>
+    <div class="loop-arrow">↻</div>
+    <div class="loop-step active">Finalize Build</div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div><strong>Don't optimize blindly.</strong> Always profile first to find the actual bottleneck before changing settings. A render-bound scene won't benefit from physics tweaks.</div>
+  </div>
+</div>
+
+</div><!-- /main-content -->
+</div><!-- /page-layout -->
+
+<footer>
+  <p>Unity 6.3 LTS URP Optimization Checklist — v2.0<br>
+  This is a living document. Update as Unity evolves or project requirements change.</p>
+  <p style="margin-top: 12px; font-size: 12px; color: var(--text-dim);">© 2026 Nguyễn Thiết Kha. All rights reserved.</p>
+</footer>
+
+<script>
+  const STORAGE_KEY = 'unity6-urp-checklist-v2';
+
+  // ── Checklist state ──
+  function loadState() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+      const indices = JSON.parse(saved);
+      const items = document.querySelectorAll('.check-item');
+      indices.forEach(i => { if (items[i]) items[i].classList.add('checked'); });
+    } catch(e) {}
+  }
+
+  function saveState() {
+    const items = document.querySelectorAll('.check-item');
+    const checked = [];
+    items.forEach((item, i) => { if (item.classList.contains('checked')) checked.push(i); });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(checked));
+  }
+
+  function toggle(el) {
+    el.classList.toggle('checked');
+    saveState();
+    updateProgress();
+  }
+
+  function resetAll() {
+    if (!confirm('Reset all checkboxes? This cannot be undone.')) return;
+    document.querySelectorAll('.check-item.checked').forEach(el => el.classList.remove('checked'));
+    localStorage.removeItem(STORAGE_KEY);
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const total = document.querySelectorAll('.check-item').length;
+    const done = document.querySelectorAll('.check-item.checked').length;
+    const pct = total ? (done / total * 100) : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = done + ' / ' + total;
+  }
+
+  // ── Sidebar toggle (mobile) ──
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('open');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+  }
+
+  // Close sidebar when clicking a nav link on mobile
+  document.querySelectorAll('.sidebar a').forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 960) closeSidebar();
+    });
+  });
+
+  // ── Scroll spy ──
+  const sectionIds = ['s1','s2','s3','s4','s5','s6','s7','s8','s9'];
+  const navLinks = document.querySelectorAll('.sidebar a[data-section]');
+
+  function updateScrollSpy() {
+    let currentId = sectionIds[0];
+    const offset = 120; // account for sticky progress bar
+
+    for (const id of sectionIds) {
+      const el = document.getElementById(id);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= offset) currentId = id;
+      }
+    }
+
+    navLinks.forEach(link => {
+      link.classList.toggle('active', link.dataset.section === currentId);
+    });
+  }
+
+  // Smooth scroll with offset for sticky header
+  document.querySelectorAll('.sidebar a[href^="#"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.getElementById(link.getAttribute('href').slice(1));
+      if (target) {
+        const top = target.getBoundingClientRect().top + window.scrollY - 80;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+    });
+  });
+
+  window.addEventListener('scroll', updateScrollSpy, { passive: true });
+
+  // ── Init ──
+  loadState();
+  updateProgress();
+  updateScrollSpy();
+</script>
+</body>
+</html>

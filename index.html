@@ -605,6 +605,7 @@
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-label">Sections</div>
+  <a href="#s0" data-section="s0"><span class="nav-num">00</span> Optimization Loop</a>
   <a href="#s1" data-section="s1"><span class="nav-num">01</span> Player Settings</a>
   <a href="#s2" data-section="s2"><span class="nav-num">02</span> Quality Settings</a>
   <a href="#s3" data-section="s3"><span class="nav-num">03</span> URP Asset Settings</a>
@@ -613,11 +614,42 @@
   <a href="#s6" data-section="s6"><span class="nav-num">06</span> Memory & GC</a>
   <a href="#s7" data-section="s7"><span class="nav-num">07</span> Pre-Release Build</a>
   <a href="#s8" data-section="s8"><span class="nav-num">08</span> Profiling & Testing</a>
-  <a href="#s9" data-section="s9"><span class="nav-num">09</span> Optimization Loop</a>
 </nav>
 <button class="nav-toggle" id="navToggle" onclick="toggleSidebar()" aria-label="Toggle navigation">☰</button>
 
 <div class="main-content">
+
+<!-- ════════════════════════════════════════════════════
+     SECTION 0: OPTIMIZATION LOOP
+     ════════════════════════════════════════════════════ -->
+<div class="section" id="s0">
+  <div class="section-header">
+    <span class="section-num">00</span>
+    <h2>The Optimization Loop</h2>
+  </div>
+  <p class="section-desc">Follow this cycle throughout development — not just at the end. Read this first.</p>
+
+  <div class="loop-flow">
+    <div class="loop-step active">Project Setup</div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-step">Baseline Profiling</div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-step">Identify Bottlenecks</div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-step">Adjust Settings</div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-step">Re-Profile</div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-step">Compare</div>
+    <div class="loop-arrow">↻</div>
+    <div class="loop-step active">Finalize Build</div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div><strong>Don't optimize blindly.</strong> Always profile first to find the actual bottleneck before changing settings. A render-bound scene won't benefit from physics tweaks.</div>
+  </div>
+</div>
 
 <!-- ════════════════════════════════════════════════════
      SECTION 1: PLAYER SETTINGS
@@ -653,25 +685,7 @@
       <div class="check-box">✓</div>
       <div class="check-content">
         <div class="check-label"><strong>Auto Graphics API</strong> <span class="val">→ Off</span></div>
-        <div class="check-sub">Player → Other Settings → Rendering → Auto Graphics API. Manually select needed APIs below it.</div>
-      </div>
-    </div>
-    <div class="check-item sub-check" onclick="toggle(this)">
-      <div class="check-box">✓</div>
-      <div class="check-content">
-        <div class="check-label">PC: DirectX 12, Vulkan, or Metal (pick what you need)</div>
-      </div>
-    </div>
-    <div class="check-item sub-check" onclick="toggle(this)">
-      <div class="check-box">✓</div>
-      <div class="check-content">
-        <div class="check-label">Android: Vulkan + OpenGL ES 3.2 (remove ES 2.0)</div>
-      </div>
-    </div>
-    <div class="check-item sub-check" onclick="toggle(this)">
-      <div class="check-box">✓</div>
-      <div class="check-content">
-        <div class="check-label">iOS: Metal only</div>
+        <div class="check-sub">Player → Other Settings → Rendering → Auto Graphics API. Disable and manually select: PC → DirectX 12 or Vulkan · Android → Vulkan + OpenGL ES 3.2 (remove ES 2.0) · iOS → Metal only.</div>
       </div>
     </div>
   </div>
@@ -688,19 +702,8 @@
     <div class="check-item" onclick="toggle(this)">
       <div class="check-box">✓</div>
       <div class="check-content">
-        <div class="check-label">Set <code>Application.targetFrameRate</code> in code <span class="val">→ PC: 60+ | Mobile: 30</span></div>
-      </div>
-    </div>
-    <div class="check-item" onclick="toggle(this)">
-      <div class="check-box">✓</div>
-      <div class="check-content">
-        <div class="check-label">Mobile: Set orientation (disable auto-rotate if fixed)</div>
-      </div>
-    </div>
-    <div class="check-item" onclick="toggle(this)">
-      <div class="check-box">✓</div>
-      <div class="check-content">
-        <div class="check-label">Mobile: Consider resolution scaling / DPI factor for low-end</div>
+        <div class="check-label"><strong>Mobile: Resolution Scaling</strong> <span class="val">→ Lower DPI for low-end devices</span></div>
+        <div class="check-sub">Use <code>Screen.SetResolution(w, h, fullscreen)</code> or set Resolution Scaling Fixed DPI Factor in URP Asset (e.g. 0.75 for low-tier). Rendering at native resolution on high-DPI phones (1440p+) is the single biggest GPU bottleneck on mobile — scaling to 70–80% is often visually identical but saves significant fill rate.</div>
       </div>
     </div>
     <div class="check-item" onclick="toggle(this)">
@@ -1017,13 +1020,6 @@
   <div class="check-item" onclick="toggle(this)">
     <div class="check-box">✓</div>
     <div class="check-content">
-      <div class="check-label">Enable Built-in Shader Stripping</div>
-      <div class="check-sub">Project Settings → Graphics → Shader Stripping → Lightmap Modes / Fog Modes → Automatic</div>
-    </div>
-  </div>
-  <div class="check-item" onclick="toggle(this)">
-    <div class="check-box">✓</div>
-    <div class="check-content">
       <div class="check-label">Assign different URP Assets per Quality Tier via tier overrides (if needed)</div>
     </div>
   </div>
@@ -1033,7 +1029,7 @@
     <div class="check-box">✓</div>
     <div class="check-content">
       <div class="check-label"><strong>Fixed Timestep</strong> <span class="val">→ 0.02 (PC) or 0.03–0.05 (Mobile)</span></div>
-      <div class="check-sub">⚠ NOT in Physics! → Project Settings → Time → Fixed Timestep. Higher value = fewer physics steps = lower CPU cost.</div>
+      <div class="check-sub"><span style="color: var(--danger); font-weight: 700;">⚠ NOT in Project Settings → Physics!</span> Go to Project Settings → <strong>Time</strong> → Fixed Timestep. Higher value = fewer physics steps = lower CPU cost.</div>
     </div>
   </div>
   <div class="check-item" onclick="toggle(this)">
@@ -1054,6 +1050,7 @@
     <div class="check-box">✓</div>
     <div class="check-content">
       <div class="check-label">Prefer primitive colliders over mesh colliders</div>
+      <div class="check-sub">Box, Sphere, and Capsule colliders are orders of magnitude cheaper than MeshColliders. Approximate complex shapes with compound primitives. If a MeshCollider is unavoidable, enable Convex (limited to 255 triangles) — non-convex MeshColliders cannot be used on moving Rigidbodies and are the most expensive collision type.</div>
     </div>
   </div>
 
@@ -1061,8 +1058,8 @@
   <div class="check-item" onclick="toggle(this)">
     <div class="check-box">✓</div>
     <div class="check-content">
-      <div class="check-label">Enable Enter Play Mode Options (skip Domain Reload)</div>
-      <div class="check-sub">Project Settings → Editor → Enter Play Mode Settings → check Enter Play Mode Options. Editor-only — can hide static-field bugs.</div>
+      <div class="check-label">Enable Enter Play Mode Options (faster iteration)</div>
+      <div class="check-sub">Project Settings → Editor → Enter Play Mode Settings → ✅ Enter Play Mode Options, then ☐ <strong>uncheck</strong> Reload Domain and ☐ <strong>uncheck</strong> Reload Scene. This makes entering Play Mode near-instant. <span style="color: var(--warn); font-weight: 600;">Warning:</span> static fields and event subscriptions persist between Play sessions — use <code>[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]</code> to reset them, or stale state will hide bugs that only appear in real builds.</div>
     </div>
   </div>
 </div>
@@ -1081,36 +1078,99 @@
   <div class="check-item" onclick="toggle(this)">
     <div class="check-box">✓</div>
     <div class="check-content">
-      <div class="check-label"><strong>Compression</strong> <span class="val">→ ASTC (modern mobile) / DXT-BC (PC)</span></div>
-      <div class="check-sub">Select texture → Inspector → Platform Override tab → Format. PVRTC only for very old iOS.</div>
+      <div class="check-label"><strong>Platform-optimal compression</strong> <span class="val">→ ASTC (Mobile) / BC7 (PC)</span></div>
+      <div class="check-sub">Select texture → Inspector → Platform Override tab → Format. BC7 replaces legacy DXT1/DXT5 with much better quality at similar size. For ASTC, choose block size by importance: 4×4 for hero assets, 6×6 as default, 8×8 for backgrounds, 10×10+ for low-importance textures.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Avoid uncompressed formats (RGB24 / RGBA32)</div>
+      <div class="check-sub">Uncompressed textures are memory killers. Only use for procedural textures or tiny special-effect assets where compression artifacts are unacceptable.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Remove alpha channel if unused</div>
+      <div class="check-sub">Alpha doubles memory in many formats. Diffuse textures without transparency and UI icons with solid backgrounds should have alpha stripped in your image editor before import.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Set Max Size to smallest acceptable resolution</div>
+      <div class="check-sub">Select texture → Inspector → Platform Override tab → Max Size. Most projects massively overshoot. Avoid 4K on mobile unless absolutely needed.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Prefer power-of-two sizes (256, 512, 1024, 2048)</div>
+      <div class="check-sub">Required for proper mipmapping and compression efficiency. Odd sizes waste VRAM and may fall back to uncompressed on some platforms.</div>
     </div>
   </div>
   <div class="check-item" onclick="toggle(this)">
     <div class="check-box">✓</div>
     <div class="check-content">
       <div class="check-label">Disable Read/Write on textures not modified at runtime</div>
-      <div class="check-sub">Select texture → Inspector → Advanced → Read/Write (uncheck)</div>
+      <div class="check-sub">Select texture → Inspector → Advanced → Read/Write (uncheck). Enabling it keeps an extra CPU copy, doubling memory usage per texture.</div>
     </div>
   </div>
   <div class="check-item" onclick="toggle(this)">
     <div class="check-box">✓</div>
     <div class="check-content">
-      <div class="check-label">Set Max Size to smallest acceptable resolution per texture</div>
-      <div class="check-sub">Select texture → Inspector → Platform Override tab → Max Size</div>
+      <div class="check-label">Set correct Texture Type per asset</div>
+      <div class="check-sub">Normal Map → special compression pipeline · Sprite → packing + pivot data · Default → general purpose. Wrong type = wrong compression = wasted quality or size.</div>
     </div>
   </div>
   <div class="check-item" onclick="toggle(this)">
     <div class="check-box">✓</div>
     <div class="check-content">
-      <div class="check-label">Disable Generate Mip Maps on UI / 2D sprites</div>
-      <div class="check-sub">Select texture → Inspector → Advanced → Generate Mip Maps (uncheck)</div>
+      <div class="check-label">Set correct sRGB per texture role</div>
+      <div class="check-sub">Albedo/Base Color → sRGB ON. Normal, Mask, Metallic, Roughness, Height, Lookup → sRGB OFF. Wrong setting causes incorrect lighting, extra conversions, and shader cost.</div>
     </div>
   </div>
   <div class="check-item" onclick="toggle(this)">
     <div class="check-box">✓</div>
     <div class="check-content">
-      <div class="check-label">Combine UI sprites into Sprite Atlases</div>
-      <div class="check-sub">Create: Assets → Create → 2D → Sprite Atlas. Then drag sprites into the Objects list.</div>
+      <div class="check-label">Enable Crunch Compression for build size (optional)</div>
+      <div class="check-sub">Select texture → Inspector → Use Crunch Compression. Lossy compression on top of GPU format — decompressed on load so no runtime cost. Great for large static textures in mobile builds. Avoid for frequently loaded/unloaded textures.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Disable Generate Mip Maps on screen-space UI and pixel-perfect sprites</div>
+      <div class="check-sub">Select texture → Inspector → Advanced → Generate Mip Maps (uncheck). Keep mipmaps ON for world-space UI, 3D billboards, zoomable maps, and anything that changes distance from camera.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Enable Streaming Mip Maps for large scenes</div>
+      <div class="check-sub">Select texture → Inspector → Advanced → Streaming Mip Maps. Unity loads only the mip levels needed based on camera distance. Essential for open worlds and memory-constrained platforms. Set the memory budget in Quality Settings → Texture Streaming → Memory Budget.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Combine UI sprites into Sprite Atlases with tight packing</div>
+      <div class="check-sub">Create: Assets → Create → 2D → Sprite Atlas. Drag sprites into the Objects list. Enable Tight Packing to reduce wasted atlas space.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Pack grayscale maps into channels (mask packing)</div>
+      <div class="check-sub">Combine Metallic (R) + Roughness/Smoothness (G) + AO (B) into a single texture. Three textures become one — saves VRAM, samplers, and draw call overhead.</div>
+    </div>
+  </div>
+  <div class="check-item" onclick="toggle(this)">
+    <div class="check-box">✓</div>
+    <div class="check-content">
+      <div class="check-label">Eliminate duplicate textures and share across materials</div>
+      <div class="check-sub">Audit the project for identical or near-identical textures imported multiple times. Reuse the same texture asset across materials wherever possible.</div>
     </div>
   </div>
 
@@ -1416,38 +1476,6 @@
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════
-     SECTION 9: OPTIMIZATION LOOP
-     ════════════════════════════════════════════════════ -->
-<div class="section" id="s9">
-  <div class="section-header">
-    <span class="section-num">09</span>
-    <h2>The Optimization Loop</h2>
-  </div>
-  <p class="section-desc">Follow this cycle throughout development — not just at the end.</p>
-
-  <div class="loop-flow">
-    <div class="loop-step active">Project Setup</div>
-    <div class="loop-arrow">→</div>
-    <div class="loop-step">Baseline Profiling</div>
-    <div class="loop-arrow">→</div>
-    <div class="loop-step">Identify Bottlenecks</div>
-    <div class="loop-arrow">→</div>
-    <div class="loop-step">Adjust Settings</div>
-    <div class="loop-arrow">→</div>
-    <div class="loop-step">Re-Profile</div>
-    <div class="loop-arrow">→</div>
-    <div class="loop-step">Compare</div>
-    <div class="loop-arrow">↻</div>
-    <div class="loop-step active">Finalize Build</div>
-  </div>
-
-  <div class="callout tip">
-    <div class="callout-icon">💡</div>
-    <div><strong>Don't optimize blindly.</strong> Always profile first to find the actual bottleneck before changing settings. A render-bound scene won't benefit from physics tweaks.</div>
-  </div>
-</div>
-
 </div><!-- /main-content -->
 </div><!-- /page-layout -->
 
@@ -1517,7 +1545,7 @@
   });
 
   // ── Scroll spy ──
-  const sectionIds = ['s1','s2','s3','s4','s5','s6','s7','s8','s9'];
+  const sectionIds = ['s0','s1','s2','s3','s4','s5','s6','s7','s8'];
   const navLinks = document.querySelectorAll('.sidebar a[data-section]');
 
   function updateScrollSpy() {

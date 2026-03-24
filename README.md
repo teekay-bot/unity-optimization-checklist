@@ -2,9 +2,7 @@
 
 A step-by-step new-project optimization checklist for **Unity 6.3 LTS** with the **Universal Render Pipeline**.
 
-## [→ Open the Checklist](https://YOUR_USERNAME.github.io/unity-optimization-checklist/)
-
-> Replace `YOUR_USERNAME` with your GitHub username after enabling Pages.
+## [→ Open the Checklist](https://teekay-bot.github.io/unity-optimization-checklist/)
 
 ## What's inside
 
@@ -17,11 +15,3 @@ A step-by-step new-project optimization checklist for **Unity 6.3 LTS** with the
 - Profiling & device testing workflow
 
 Checkbox progress is saved locally in your browser via `localStorage`.
-
-## Hosting
-
-This repo is configured for [GitHub Pages](https://pages.github.com/). Enable it in **Settings → Pages → Deploy from branch → main / root**.
-
-## License
-
-© 2026 Nguyễn Thiết Kha. All rights reserved.
